@@ -153,12 +153,10 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:14
 .mt{padding:5px 14px 5px 26px;font-size:11px;color:var(--t3)}
 .nores{padding:2.5rem;text-align:center;font-size:13px;color:var(--t3)}
 .nores i{font-size:28px;display:block;margin-bottom:10px}
-.err{background:var(--rbg);color:var(--red);border:.5px solid rgba(163,45,45,.25);
-  border-radius:var(--rs);padding:10px 14px;font-size:13px;margin-bottom:1rem;display:none;line-height:1.6}
+
 .foot{text-align:center;padding:1.5rem 0 .5rem;font-size:12px;color:var(--t3)}
 .foot a{color:var(--t3)}.foot a:hover{color:var(--text)}
-.stale{display:none;font-size:11px;background:var(--abg);color:var(--amber);
-  border:.5px solid rgba(186,117,23,.3);border-radius:4px;padding:2px 8px}
+
 .sync-status{font-size:11px;color:var(--t3);display:none;align-items:center;gap:5px}
 .sync-status.running{display:inline-flex;color:var(--amber)}
 .sync-status.done{display:inline-flex;color:var(--green)}
@@ -183,7 +181,6 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:14
   </div>
 </nav>
 <div class="page">
-  <div class="err" id="err"></div>
   <div class="banner">
     <div class="btop">
       <div class="rinfo">
@@ -419,7 +416,7 @@ function render(d){
   const upd=d.updated?new Date(d.updated).toLocaleString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):'—';
   document.getElementById('ts').textContent='Updated: '+upd;
   
-  document.getElementById('err').style.display='none';
+  
 }
 function togE(k){
   if(EX.has(k))EX.delete(k);else EX.add(k);
