@@ -20,7 +20,7 @@ QUERIES = {
 
 def jira_search(jql, max_results=100):
     params = urlencode({"jql": jql, "maxResults": max_results, "fields": FIELDS})
-    url = f"{JIRA_BASE}/rest/api/3/search?{params}"
+    url = f"{JIRA_BASE}/rest/api/3/search/jql?{params}"
     req = Request(url, headers={"Authorization": f"Basic {AUTH}", "Accept": "application/json"})
     try:
         with urlopen(req, timeout=30) as resp:
