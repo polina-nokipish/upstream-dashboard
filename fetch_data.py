@@ -10,7 +10,7 @@ JIRA_BASE = "https://tatari.atlassian.net"
 EMAIL = os.environ["JIRA_EMAIL"]
 TOKEN = os.environ["JIRA_TOKEN"]
 AUTH  = base64.b64encode(f"{EMAIL}:{TOKEN}".encode()).decode()
-FIELDS = "summary,status,issuetype,assignee,parent,fixVersions"
+FIELDS = "summary,status,issuetype,assignee,parent,fixVersions,updated"
 
 QUERIES = {
     "v62":            'project=TVP AND fixVersion="Version 62" ORDER BY status ASC',
@@ -45,6 +45,7 @@ def slim(issues):
             "assignee":    f["assignee"]["displayName"] if f.get("assignee") else None,
             "epic":        {"key": p["key"], "summary": p["fields"]["summary"][:70]} if p else None,
             "fixVersions": [v["name"] for v in f.get("fixVersions", [])],
+            "updated":     f.get("updated", "")[:10] if f.get("updated") else None,
         })
     return out
 
