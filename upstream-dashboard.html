@@ -162,6 +162,19 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:14
 .sync-status.done{display:inline-flex;color:var(--green)}
 .sync-status.error{display:inline-flex;color:var(--red)}
 .upd-info{font-size:11px;color:var(--t3);display:flex;align-items:center;gap:5px}
+.load-card{background:var(--surface);border:.5px solid var(--border);border-radius:var(--r);
+  padding:1rem 1.25rem;margin-bottom:1.25rem;display:grid;grid-template-columns:1fr 1fr;gap:1.25rem}
+@media(max-width:600px){.load-card{grid-template-columns:1fr}}
+.load-side{display:flex;flex-direction:column;gap:7px}
+.load-title{font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:.6px;color:#7a6fa0}
+.load-meta{display:flex;align-items:baseline;justify-content:space-between}
+.load-num{font-size:22px;font-weight:500;color:var(--text)}
+.load-pct{font-size:13px;font-weight:500}
+.load-bar{height:6px;background:var(--s3);border-radius:3px;overflow:hidden}
+.load-fill{height:100%;border-radius:3px;transition:width .7s ease}
+.load-stats{display:flex;gap:10px;flex-wrap:wrap}
+.load-stat{font-size:11px;color:var(--t3);display:flex;align-items:center;gap:4px}
+.load-divider{width:.5px;background:var(--border2);margin:0}
 </style>
 </head>
 <body>
@@ -199,6 +212,27 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:14
         <div class="pbar"><div class="pfill" id="pfill" style="width:0%"></div></div>
       </div>
       <div class="pct" id="ppct">—%</div>
+    </div>
+  </div>
+  <div class="load-card" id="load-card">
+    <div class="load-side">
+      <div class="load-title">Version 62 — in scope</div>
+      <div class="load-meta">
+        <div class="load-num" id="lc-v62-tot">—</div>
+        <div class="load-pct g" id="lc-v62-pct" style="color:var(--green)">—%</div>
+      </div>
+      <div class="load-bar"><div class="load-fill" id="lc-v62-bar" style="width:0%;background:linear-gradient(90deg,#3B6D11,#5aa63c)"></div></div>
+      <div class="load-stats" id="lc-v62-stats"></div>
+    </div>
+    <div class="load-divider"></div>
+    <div class="load-side">
+      <div class="load-title" style="color:var(--amber)">Out of version — sprint extras</div>
+      <div class="load-meta">
+        <div class="load-num" id="lc-out-tot">—</div>
+        <div class="load-pct" id="lc-out-pct" style="color:var(--amber)">—%</div>
+      </div>
+      <div class="load-bar"><div class="load-fill" id="lc-out-bar" style="width:0%;background:linear-gradient(90deg,var(--amber),#e8a040)"></div></div>
+      <div class="load-stats" id="lc-out-stats"></div>
     </div>
   </div>
   <div class="mgrid">
@@ -246,7 +280,16 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:14
     <button class="vb active" id="outtog" onclick="toggleOut()" style="font-size:11px;border:.5px solid var(--border2)">Show all</button>
   </div>
   <div class="obox">
-    <div class="ohdr"><span style="font-size:12px;color:var(--t2)">Tasks in Sprint 62 not tagged to Version 62</span></div>
+    <div class="ohdr">
+      <span style="font-size:12px;color:var(--t2)">Tasks in Sprint 62 not tagged to Version 62</span>
+      <div style="display:flex;align-items:center;gap:12px">
+        <span id="out-pct" style="font-size:13px;font-weight:500;color:var(--green)"></span>
+        <div style="width:120px;height:5px;background:var(--s3);border-radius:3px;overflow:hidden">
+          <div id="out-pbar" style="height:100%;background:linear-gradient(90deg,#3B6D11,#5aa63c);border-radius:3px;width:0%;transition:width .6s ease"></div>
+        </div>
+        <span id="out-counts" style="font-size:11px;color:var(--t3)"></span>
+      </div>
+    </div>
     <div id="outlist"></div>
   </div>
   <div class="divl"></div>
@@ -421,11 +464,53 @@ function render(d){
   document.getElementById('ev').innerHTML=bEpic(ft);
   document.getElementById('fv').innerHTML=bFlat(ft);
   const out=d.sprint62_extra;
-  document.getElementById('outpill').textContent=out.length+' tasks';
+  const outTasks=out.filter(t=>t.type!=='Epic');
+  const outDone=outTasks.filter(t=>dn(t.status)).length;
+  const outTot=outTasks.length;
+  const outPct=outTot?Math.round(outDone/outTot*100):0;
+  document.getElementById('outpill').textContent=outTasks.length+' tasks';
+  document.getElementById('out-pct').textContent=outPct+'%';
+  document.getElementById('out-pbar').style.width=outPct+'%';
+  document.getElementById('out-counts').textContent=outDone+' / '+outTot+' done';
   document.getElementById('outlist').innerHTML=bOut(out,showAll);
   document.getElementById('outtog').textContent=showAll?'Show less':`Show all ${out.length}`;
   document.getElementById('n63').textContent=d.v63.filter(t=>t.type!=='Epic').length+' tasks planned';
   document.getElementById('nlist').innerHTML=bNext(d.v63);
+  // Sprint load card
+  const v62tot=tasks.length;
+  const outNonEpic=d.sprint62_extra.filter(t=>t.type!=='Epic');
+  const outTotal=outNonEpic.length;
+  const grand=v62tot+outTotal;
+  const v62share=grand?Math.round(v62tot/grand*100):0;
+  const outShare=grand?Math.round(outTotal/grand*100):0;
+
+  document.getElementById('lc-v62-tot').textContent=v62tot+' tasks';
+  document.getElementById('lc-v62-pct').textContent=v62share+'% of sprint';
+  document.getElementById('lc-v62-bar').style.width=v62share+'%';
+
+  const v62sDone=tasks.filter(t=>dn(t.status)).length;
+  const v62sIP=tasks.filter(t=>t.status==='In Progress').length;
+  const v62sTT=tasks.filter(t=>t.status==='To test').length;
+  const v62sTD=tasks.filter(t=>t.status==='To Do').length;
+  document.getElementById('lc-v62-stats').innerHTML=
+    `<span class="load-stat"><span class="sd d5"></span>${v62sDone} done</span>`+
+    `<span class="load-stat"><span class="sd d1"></span>${v62sIP} in progress</span>`+
+    `<span class="load-stat"><span class="sd d3"></span>${v62sTT} to test</span>`+
+    `<span class="load-stat"><span class="sd d0"></span>${v62sTD} to do</span>`;
+
+  const outD=outNonEpic.filter(t=>dn(t.status)).length;
+  const outIP=outNonEpic.filter(t=>t.status==='In Progress').length;
+  const outTD=outNonEpic.filter(t=>t.status==='To Do').length;
+  const outBlk=outNonEpic.filter(t=>t.status==='Blocked').length;
+  document.getElementById('lc-out-tot').textContent=outTotal+' tasks';
+  document.getElementById('lc-out-pct').textContent=outShare+'% of sprint';
+  document.getElementById('lc-out-bar').style.width=outShare+'%';
+  document.getElementById('lc-out-stats').innerHTML=
+    `<span class="load-stat"><span class="sd d5"></span>${outD} done</span>`+
+    `<span class="load-stat"><span class="sd d1"></span>${outIP} in progress</span>`+
+    `<span class="load-stat"><span class="sd d0"></span>${outTD} to do</span>`+
+    (outBlk?`<span class="load-stat"><span class="sd d6"></span>${outBlk} blocked</span>`:'');
+
   updDates(d.meta||null);
   const upd=d.updated?new Date(d.updated).toLocaleString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):'—';
   document.getElementById('ts').textContent='Updated: '+upd;
