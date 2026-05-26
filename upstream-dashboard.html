@@ -187,8 +187,8 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:14
         <span class="vbadge">Version 62</span>
         <span class="sbadge">Sprint 62</span>
         <div class="dchips">
-          <div class="dc"><i class="ti ti-calendar-event"></i>Started: Apr 14, 2026</div>
-          <div class="dc" id="dcr"><i class="ti ti-calendar-due"></i>Release: Jun 6, 2026</div>
+          <div class="dc" id="dc-start" style="display:none"><i class="ti ti-calendar-event"></i><span id="dtxt-start">—</span></div>
+          <div class="dc" id="dcr"><i class="ti ti-calendar-due"></i><span id="dtxt-rel">—</span></div>
           <div class="dc" id="dcd"><i class="ti ti-clock"></i><span id="dtxt">—</span></div>
         </div>
       </div>
@@ -279,9 +279,23 @@ function sn(n){if(!n)return'—';const p=n.trim().split(' ');return p.length===1
 function pl(s){const c=sc(s);return`<span class="sp ${c.p}">${c.l}</span>`}
 function tl(k){return`<a class="tk" href="${JIRA}${k}" target="_blank">${k}</a>`}
 function ico(t){const m={Epic:'ti-layers-union',Task:'ti-checkbox',Bug:'ti-bug',Maintenance:'ti-tool'};return`<i class="ti ${m[t]||'ti-point'} ti2"></i>`}
-function updDates(){
-  const d=Math.ceil((new Date('2026-06-06')-new Date())/86400000);
+function updDates(meta){
+  // Sprint start date
+  const startEl=document.getElementById('dc-start');
+  const startTxt=document.getElementById('dtxt-start');
+  if(meta?.sStartDate){
+    startTxt.textContent='Started: '+meta.sStartDate;
+    startEl.style.display='flex';
+  }
+  // Release date
+  const relTxt=document.getElementById('dtxt-rel');
+  const relDate=meta?.vReleaseDate||null;
+  relTxt.textContent=relDate?'Release: '+relDate:'Release: —';
+
+  // Days left
   const t=document.getElementById('dtxt'),dc=document.getElementById('dcd'),dr=document.getElementById('dcr');
+  if(!relDate){t.textContent='—';return;}
+  const d=Math.ceil((new Date(relDate)-new Date())/86400000);
   if(d<0){t.textContent=Math.abs(d)+'d overdue';dc.className='dc over';dr.className='dc over'}
   else if(d<=14){t.textContent=d+'d left';dc.className='dc soon';dr.className='dc soon'}
   else{t.textContent=d+'d left';dc.className='dc';dr.className='dc'}
@@ -412,7 +426,7 @@ function render(d){
   document.getElementById('outtog').textContent=showAll?'Show less':`Show all ${out.length}`;
   document.getElementById('n63').textContent=d.v63.filter(t=>t.type!=='Epic').length+' tasks planned';
   document.getElementById('nlist').innerHTML=bNext(d.v63);
-  updDates();
+  updDates(d.meta||null);
   const upd=d.updated?new Date(d.updated).toLocaleString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):'—';
   document.getElementById('ts').textContent='Updated: '+upd;
   
