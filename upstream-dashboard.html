@@ -163,8 +163,8 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:14
 .sync-status.error{display:inline-flex;color:var(--red)}
 .upd-info{font-size:11px;color:var(--t3);display:flex;align-items:center;gap:5px}
 .load-card{background:var(--surface);border:.5px solid var(--border);border-radius:var(--r);
-  padding:1rem 1.25rem;margin-bottom:1.25rem;display:grid;grid-template-columns:1fr 1fr;gap:1.25rem}
-@media(max-width:600px){.load-card{grid-template-columns:1fr}}
+  padding:1rem 1.25rem;margin-bottom:1.25rem;display:grid;grid-template-columns:1fr 1fr 1fr;gap:1.25rem;align-items:start}
+@media(max-width:700px){.load-card{grid-template-columns:1fr}}
 .load-side{display:flex;flex-direction:column;gap:7px}
 .load-title{font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:.6px;color:#7a6fa0}
 .load-meta{display:flex;align-items:baseline;justify-content:space-between}
@@ -175,6 +175,25 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:14
 .load-stats{display:flex;gap:10px;flex-wrap:wrap}
 .load-stat{font-size:11px;color:var(--t3);display:flex;align-items:center;gap:4px}
 .load-divider{width:.5px;background:var(--border2);margin:0}
+.insights{display:flex;flex-direction:column;gap:8px;justify-content:space-between}
+.ins-card{background:var(--surface);border:.5px solid var(--border);border-radius:var(--r);
+  padding:.85rem 1rem;flex:1;display:flex;flex-direction:column;gap:4px}
+.ins-label{font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:.6px;color:#7a6fa0}
+.ins-row{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.ins-val{font-size:20px;font-weight:500;color:var(--text)}
+.ins-badge{font-size:11px;font-weight:500;padding:3px 9px;border-radius:4px;white-space:nowrap}
+.badge-green{background:#d4edba;color:#27500A}
+.badge-amber{background:var(--abg);color:var(--amber)}
+.badge-red{background:var(--rbg);color:var(--red)}
+.badge-blue{background:var(--bbg);color:var(--blue)}
+.ins-sub{font-size:11px;color:var(--t3);line-height:1.4}
+.ins-list{display:flex;flex-direction:column;gap:4px;margin-top:2px}
+.ins-item{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12px}
+.ins-item-key{font-family:var(--mono);font-size:11px;color:var(--blue);text-decoration:none;flex-shrink:0}
+.ins-item-key:hover{text-decoration:underline}
+.ins-item-name{color:var(--t2);flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ins-item-who{color:var(--t3);font-size:11px;flex-shrink:0}
+.ins-empty{font-size:12px;color:var(--t3);font-style:italic}
 </style>
 </head>
 <body>
@@ -233,6 +252,29 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:14
       </div>
       <div class="load-bar"><div class="load-fill" id="lc-out-bar" style="width:0%;background:linear-gradient(90deg,var(--amber),#e8a040)"></div></div>
       <div class="load-stats" id="lc-out-stats"></div>
+    </div>
+    <div class="load-divider"></div>
+    <div class="insights" id="insights-col">
+      <div class="ins-card">
+        <div class="ins-label">Release risk</div>
+        <div class="ins-row">
+          <div class="ins-val" id="risk-val">—</div>
+          <span class="ins-badge" id="risk-badge">—</span>
+        </div>
+        <div class="ins-sub" id="risk-sub">—</div>
+      </div>
+      <div class="ins-card">
+        <div class="ins-label">QA bottleneck</div>
+        <div class="ins-row">
+          <div class="ins-val" id="qa-val">—</div>
+          <span class="ins-badge" id="qa-badge">—</span>
+        </div>
+        <div class="ins-sub" id="qa-sub">—</div>
+      </div>
+      <div class="ins-card">
+        <div class="ins-label" style="margin-bottom:4px">Stale tasks <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--t3);font-size:10px">&gt;3 days no update</span></div>
+        <div id="stale-list"></div>
+      </div>
     </div>
   </div>
   <div class="mgrid">
@@ -510,6 +552,71 @@ function render(d){
     `<span class="load-stat"><span class="sd d1"></span>${outIP} in progress</span>`+
     `<span class="load-stat"><span class="sd d0"></span>${outTD} to do</span>`+
     (outBlk?`<span class="load-stat"><span class="sd d6"></span>${outBlk} blocked</span>`:'');
+
+  // ── Insights ──────────────────────────────────────────────────────────
+  // 1. Release risk: % done vs % time elapsed
+  const sprintStart = d.meta?.sStartDate ? new Date(d.meta.sStartDate) : new Date('2026-04-30');
+  const sprintEnd   = d.meta?.sEndDate   ? new Date(d.meta.sEndDate)   : new Date('2026-06-01');
+  const now2 = new Date();
+  const sprintLen = sprintEnd - sprintStart;
+  const elapsed = Math.max(0, now2 - sprintStart);
+  const timePct = sprintLen > 0 ? Math.min(100, Math.round(elapsed / sprintLen * 100)) : 50;
+  const donePct = pct; // already computed above
+  const riskRatio = timePct > 0 ? donePct / timePct : 1;
+  let riskLabel, riskClass, riskSub;
+  if(riskRatio >= 0.9){
+    riskLabel='On track'; riskClass='badge-green';
+    riskSub=`${donePct}% done, ${timePct}% of sprint elapsed`;
+  } else if(riskRatio >= 0.6){
+    riskLabel='Watch out'; riskClass='badge-amber';
+    riskSub=`${donePct}% done but ${timePct}% of time used`;
+  } else {
+    riskLabel='At risk'; riskClass='badge-red';
+    riskSub=`Only ${donePct}% done, ${timePct}% of sprint elapsed`;
+  }
+  document.getElementById('risk-val').textContent=Math.round(riskRatio*100)+'%';
+  document.getElementById('risk-badge').textContent=riskLabel;
+  document.getElementById('risk-badge').className='ins-badge '+riskClass;
+  document.getElementById('risk-sub').textContent=riskSub;
+
+  // 2. QA bottleneck: To test vs In Progress
+  const toTestCount = tasks.filter(t=>t.status==='To test').length;
+  const inProgCount = tasks.filter(t=>t.status==='In Progress').length;
+  const qaRatio = inProgCount > 0 ? toTestCount / inProgCount : 0;
+  let qaLabel, qaClass, qaSub;
+  if(toTestCount === 0){
+    qaLabel='Clear'; qaClass='badge-green'; qaSub='No tasks waiting for QA';
+  } else if(qaRatio > 1.5){
+    qaLabel='Bottleneck'; qaClass='badge-red';
+    qaSub=`${toTestCount} to test vs ${inProgCount} in progress — QA overloaded`;
+  } else if(qaRatio > 0.8){
+    qaLabel='Tight'; qaClass='badge-amber';
+    qaSub=`${toTestCount} to test vs ${inProgCount} in progress`;
+  } else {
+    qaLabel='Balanced'; qaClass='badge-green';
+    qaSub=`${toTestCount} to test vs ${inProgCount} in progress`;
+  }
+  document.getElementById('qa-val').textContent=toTestCount+' / '+inProgCount;
+  document.getElementById('qa-badge').textContent=qaLabel;
+  document.getElementById('qa-badge').className='ins-badge '+qaClass;
+  document.getElementById('qa-sub').textContent=qaSub;
+
+  // 3. Stale tasks: In Progress with no update for 3+ days
+  const threeDaysAgo = new Date(Date.now() - 3*24*60*60*1000);
+  const allV62 = d.v62.filter(t=>t.type!=='Epic');
+  const stale = allV62.filter(t=>
+    ['In Progress','Code-Review','To test'].includes(t.status) &&
+    t.updated && new Date(t.updated) < threeDaysAgo
+  ).slice(0,5);
+  const staleEl = document.getElementById('stale-list');
+  if(stale.length===0){
+    staleEl.innerHTML='<div class="ins-empty">All active tasks updated recently</div>';
+  } else {
+    staleEl.innerHTML='<div class="ins-list">'+stale.map(t=>{
+      const days=Math.floor((now2-new Date(t.updated))/86400000);
+      return`<div class="ins-item"><a class="ins-item-key" href="${t.url}" target="_blank">${t.key}</a><span class="ins-item-name" title="${t.summary}">${t.summary}</span><span class="ins-item-who" style="color:var(--amber)">${days}d</span></div>`;
+    }).join('')+'</div>'+(stale.length===5?'<div style="font-size:11px;color:var(--t3);margin-top:4px">+ possibly more</div>':'');
+  }
 
   updDates(d.meta||null);
   const upd=d.updated?new Date(d.updated).toLocaleString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):'—';
