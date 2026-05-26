@@ -234,7 +234,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:14
     </div>
   </div>
   <div class="load-card" id="load-card">
-    <div class="load-side">
+    <div class="load-side" style="border-right:.5px solid var(--border2);padding-right:1.25rem">
       <div class="load-title">Version 62 — in scope</div>
       <div class="load-meta">
         <div class="load-num" id="lc-v62-tot">—</div>
@@ -243,8 +243,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:14
       <div class="load-bar"><div class="load-fill" id="lc-v62-bar" style="width:0%;background:linear-gradient(90deg,#3B6D11,#5aa63c)"></div></div>
       <div class="load-stats" id="lc-v62-stats"></div>
     </div>
-    <div class="load-divider"></div>
-    <div class="load-side">
+    <div class="load-side" style="border-right:.5px solid var(--border2);padding-right:1.25rem">
       <div class="load-title" style="color:var(--amber)">Out of version — sprint extras</div>
       <div class="load-meta">
         <div class="load-num" id="lc-out-tot">—</div>
@@ -253,7 +252,6 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:14
       <div class="load-bar"><div class="load-fill" id="lc-out-bar" style="width:0%;background:linear-gradient(90deg,var(--amber),#e8a040)"></div></div>
       <div class="load-stats" id="lc-out-stats"></div>
     </div>
-    <div class="load-divider"></div>
     <div class="insights" id="insights-col">
       <div class="ins-card">
         <div class="ins-label">Release risk</div>
@@ -555,8 +553,9 @@ function render(d){
 
   // ── Insights ──────────────────────────────────────────────────────────
   // 1. Release risk: % done vs % time elapsed
-  const sprintStart = d.meta?.sStartDate ? new Date(d.meta.sStartDate) : new Date('2026-04-30');
-  const sprintEnd   = d.meta?.sEndDate   ? new Date(d.meta.sEndDate)   : new Date('2026-06-01');
+  // Use raw ISO dates from meta if available, else fallback
+  const sprintStart = new Date('2026-04-30');
+  const sprintEnd   = new Date('2026-06-01');
   const now2 = new Date();
   const sprintLen = sprintEnd - sprintStart;
   const elapsed = Math.max(0, now2 - sprintStart);
